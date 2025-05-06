@@ -8,7 +8,7 @@ import (
 )
 
 type login struct {
-	UserId uint "json:user_id"
+	UserId uint `json:"user_id"`
 }
 
 func Login(c *gin.Context) {
