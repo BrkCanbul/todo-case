@@ -1,17 +1,14 @@
 package main
 
 import (
-	"net/http"
+	"todo-case/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	r := gin.Default();
-	r.GET("/ping",func(c *gin.Context){
-		c.JSON(http.StatusOK,gin.H{
-			"pong":"gong",
-		})
-	})
-	r.Run(":8000")
+
+	routes.Setup(r)
+	r.Run(":8080")
 }
