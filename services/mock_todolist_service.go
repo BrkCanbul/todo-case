@@ -116,7 +116,7 @@ func (s *MockTodoService) GetElementsByListId(id uint, userid int32, usertype st
 
 func (s *MockTodoService) GetAllElements(usertype string, userid int32) (*[]models.ToDo, error) {
 	s.mu.Lock()
-	result := make([]models.ToDo, len(s.todos))
+	result := make([]models.ToDo, 0)
 	s.mu.Unlock()
 	usertodoids := s.GetUserListIds(userid)
 	if usertype == "user" {
@@ -137,15 +137,15 @@ func (s *MockTodoService) GetAllElements(usertype string, userid int32) (*[]mode
 		}
 	} else {
 		for i := range s.todos {
-			result[i] = models.ToDo{
-				TodoId:      s.todos[i].TodoId,
-				TodolistId:  s.todos[i].TodolistId,
-				CreateDate:  s.todos[i].CreateDate,
-				UpdateDate:  s.todos[i].UpdateDate,
-				RemoveDate:  s.todos[i].RemoveDate,
-				Content:     s.todos[i].Content,
-				IsCompleted: s.todos[i].IsCompleted,
-			}
+			result = append(result, models.ToDo{
+				TodoId:       s.todos[i].TodoId,
+				TodolistId:   s.todos[i].TodolistId,
+				CreateDate:   s.todos[i].CreateDate,
+				UpdateDate:   s.todos[i].UpdateDate,
+				RemoveDate:   s.todos[i].RemoveDate,
+				Content:      s.todos[i].Content,
+				IsCompleted:  s.todos[i].IsCompleted,
+			})
 		}
 	}
 	return &result, nil
