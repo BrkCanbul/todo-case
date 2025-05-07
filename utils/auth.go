@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,13 +13,21 @@ import (
 var key = []byte("secretKey")
 
 type Claims struct {
-	UserId uint
+	UserId   uint
+	UserType string
 	jwt.RegisteredClaims
 }
-func GenerateKey(userId uint) (string, error) {
+
+func GenerateKey(userId uint,role string) (string, error) {
 	expTime := time.Now().Add(24 * time.Hour)
+	if role != "admin" && role != "user" {
+		// make sure if invalid role is given the program will error
+		return "", jwt.ErrTokenInvalidClaims
+
+	} 
 	claims := &Claims{
 		UserId: userId,
+		UserType: role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expTime),
 		},
@@ -53,7 +62,10 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims.UserId)
+		fmt.Printf("User ID: %d\n", claims.UserId)
+		fmt.Printf("User Type: %s\n", claims.UserType)
+		c.Set("user_type", claims.UserType)
+
 		c.Next()
 	}
 }
-

@@ -27,6 +27,8 @@ type LoginResponse struct {
 	Token string `json:"token" example:"token123"`
 }
 
+
+
 // Login godoc
 // @Summary      Giriş yap
 // @Description  Kullanıcı adı ve şifre ile giriş yapar
@@ -46,13 +48,13 @@ func (ctl *AuthController) Login(c *gin.Context) {
 
 	user, ok := ctl.UserService.ValidateCredentials(req.Username, req.Password)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Geçersiz kullanıcı adı veya şifre"})
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Geçersiz kullanici adi veya şifre"})
 		return
 	}
 
-	token, err := utils.GenerateKey(user.ID)
+	token, err := utils.GenerateKey(user.ID, user.UserType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Token oluşturulamadı"})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Token oluşturulamadi"})
 		return
 	}
 

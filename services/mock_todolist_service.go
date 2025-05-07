@@ -55,9 +55,6 @@ func (s *MockTodoService) GetElementsByListId(id uint) (*[]models.ToDo, error) {
 	s.mu.Lock()
 	result := make([]models.ToDo, 0)
 	s.mu.Unlock()
-	fmt.Println("get by id", id)
-
-	fmt.Println("id", id)
 	for _, elem := range s.todos {
 		if elem.TodolistId == id {
 			result = append(result, models.ToDo{

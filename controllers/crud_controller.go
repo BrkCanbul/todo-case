@@ -30,6 +30,7 @@ func NewTodoController(service services.TodoService) *TodoController {
 // @Router       /todos [get]
 func (ctl *TodoController) GetLists(c *gin.Context) {
 	todos, err := ctl.srv.GetAll()
+	fmt.Print(c.GetString("user_type"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
@@ -51,6 +52,9 @@ func (ctl *TodoController) GetLists(c *gin.Context) {
 // @Router       /todos [post]
 func (ctl *TodoController) AddToDoList(c *gin.Context) {
 	var todolist models.ToDoList
+
+	fmt.Printf("AddToDoList %v",c.GetString("user_type"))
+	fmt.Print(c.GetString("user_type"))
 	if err := c.ShouldBindJSON(&todolist); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error: err.Error()})
@@ -79,6 +83,9 @@ func (ctl *TodoController) AddToDoList(c *gin.Context) {
 // @Router       /todos/elems [post]
 func (ctl *TodoController) AddToDoElement(c *gin.Context) {
 	var todoElement models.ToDo
+	fmt.Printf("AddToDoElement %v",c.GetString("user_type"))
+
+	fmt.Print(c.GetString("user_type"))
 	if err := c.ShouldBindJSON(&todoElement); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error: err.Error()})
@@ -106,7 +113,10 @@ func (ctl *TodoController) AddToDoElement(c *gin.Context) {
 // @Router       /todos/elems [get]
 func (ctl *TodoController) GetToDoElements(c *gin.Context) {
 	todoElements, err := ctl.srv.GetAllElements()
-	fmt.Println("all todo elements")
+
+	fmt.Printf("GetToDoElements %v",c.GetString("user_type"))
+
+	fmt.Print(c.GetString("user_type"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
@@ -129,6 +139,9 @@ func (ctl *TodoController) GetToDoElements(c *gin.Context) {
 func (ctl *TodoController) GetElementsByListId(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
+	fmt.Printf("GetElementsByListId %v",c.GetString("user_type"))
+
+	fmt.Print(c.GetString("user_type"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
 		return
