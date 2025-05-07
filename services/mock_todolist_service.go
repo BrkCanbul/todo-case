@@ -12,9 +12,17 @@ type TodoService interface {
 	GetAll() (*[]models.ToDoList, error)
 	GetAllElements(usertype string, userid int32) (*[]models.ToDo, error)
 	GetElementsByListId(id uint, userid int32, usertype string) (*[]models.ToDo, error)
+
 	Create(todo *models.ToDoList) (*models.ToDoList, error)
 	CreateElement(todoElement *models.ToDo, userid int32, usertype string) (*models.ToDoList, error)
+
+	DeleteList(id uint, userId int32, userType string) error
+	DeleteTodo(id uint, userId int32, userType string) error
+
+	UpdateList(updatedList *models.ToDoList, userId int32, userType string) (*models.ToDoList, error)
+	UpdateTodo(updatedTodo *models.ToDo, userId int32, userType string) (*models.ToDo, error)
 }
+
 
 type MockTodoService struct {
 	todoLists []models.ToDoList
@@ -190,4 +198,93 @@ func (s *MockTodoService) CreateElement(todoElement *models.ToDo, userid int32, 
 	}
 	s.todos = append(s.todos, *todoElement)
 	return selected, nil
+}
+func (s *MockTodoService) DeleteList(id uint, userId int32, userType string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, list := range s.todoLists {
+		if list.ListId == id {
+			if userType == "admin" || list.UserId == userId {
+				s.todoLists = append(s.todoLists[:i], s.todoLists[i+1:]...)
+				// O listeye ait görevleri de silelim
+				filtered := make([]models.ToDo, 0)
+				for _, todo := range s.todos {
+					if todo.TodolistId != id {
+						filtered = append(filtered, todo)
+					}
+				}
+				s.todos = filtered
+				return nil
+			}
+			return errors.New("bu listeyi silmeye yetkiniz yok")
+		}
+	}
+	return errors.New("liste bulunamadı")
+}
+
+func (s *MockTodoService) UpdateList(updatedList *models.ToDoList, userId int32, userType string) (*models.ToDoList, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, list := range s.todoLists {
+		if list.ListId == updatedList.ListId {
+			if userType == "admin" || list.UserId == userId {
+				updatedList.CreateDate = list.CreateDate
+				updatedList.RemoveDate = list.RemoveDate
+				updatedList.UpdateDate = time.Now()
+				s.todoLists[i] = *updatedList
+				return updatedList, nil
+			}
+			return nil, errors.New("bu listeyi güncellemeye yetkiniz yok")
+		}
+	}
+	return nil, errors.New("liste bulunamadı")
+}
+
+func (s *MockTodoService) DeleteTodo(id uint, userId int32, userType string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, todo := range s.todos {
+		if todo.TodoId == id {
+			listOwnerId := s.findListOwner(todo.TodolistId)
+			if userType == "admin" || listOwnerId == userId {
+				s.todos = append(s.todos[:i], s.todos[i+1:]...)
+				return nil
+			}
+			return errors.New("bu görevi silmeye yetkiniz yok")
+		}
+	}
+	return errors.New("görev bulunamadı")
+}
+
+func (s *MockTodoService) UpdateTodo(updatedTodo *models.ToDo, userId int32, userType string) (*models.ToDo, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, todo := range s.todos {
+		if todo.TodoId == updatedTodo.TodoId {
+			listOwnerId := s.findListOwner(todo.TodolistId)
+			if userType == "admin" || listOwnerId == userId {
+				updatedTodo.CreateDate = todo.CreateDate
+				updatedTodo.RemoveDate = todo.RemoveDate
+				updatedTodo.UpdateDate = time.Now()
+				s.todos[i] = *updatedTodo
+				return updatedTodo, nil
+			}
+			return nil, errors.New("bu görevi güncellemeye yetkiniz yok")
+		}
+	}
+	return nil, errors.New("görev bulunamadı")
+}
+
+// Yardımcı fonksiyon
+func (s *MockTodoService) findListOwner(listId uint) int32 {
+	for _, list := range s.todoLists {
+		if list.ListId == listId {
+			return list.UserId
+		}
+	}
+	return -1
 }
