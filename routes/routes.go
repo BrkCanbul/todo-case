@@ -15,8 +15,12 @@ func SetupRoutes(r *gin.Engine, todoController *controllers.TodoController, auth
 	{
 		authGroup.GET("/", todoController.GetLists)
 		authGroup.POST("/", todoController.AddToDoList)
+		authGroup.PUT("/:id", todoController.UpdateToDolist)
+		authGroup.DELETE("/:id", todoController.DeleteToDoList)
 		authGroup.GET("/elems", todoController.GetToDoElements)
 		authGroup.GET("/elems/:id", todoController.GetElementsByListId)
-		authGroup.POST("/elems", todoController.AddToDoElement)
+		authGroup.POST("/elems/", todoController.AddToDoElement)
+		authGroup.PUT("/elems/:id", todoController.UpdateToDoElement)
+		authGroup.DELETE("/elems/:id", todoController.DeleteToDoElement)
 	}
 }
