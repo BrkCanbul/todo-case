@@ -3,8 +3,10 @@ package controllers
 
 import (
 	"net/http"
-	"todo-case/utils"
 	"todo-case/services"
+	"todo-case/utils"
+
+	"todo-case/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +23,20 @@ type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+type LoginResponse struct {
+	Token string `json:"token" example:"token123"`
+}
 
+// Login godoc
+// @Summary      Giriş yap
+// @Description  Kullanıcı adı ve şifre ile giriş yapar
+// @Tags         auth
+// @Accept       json
+// @Param        LoginRequest  body      LoginRequest  true  "Yeni görev listesi"
+// @Produce      json
+// @Success      200  {array}  models.ToDo
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /login [post]
 func (ctl *AuthController) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -31,15 +46,15 @@ func (ctl *AuthController) Login(c *gin.Context) {
 
 	user, ok := ctl.UserService.ValidateCredentials(req.Username, req.Password)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kullanıcı adı veya şifre hatalı"})
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Geçersiz kullanıcı adı veya şifre"})
 		return
 	}
 
 	token, err := utils.GenerateKey(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token oluşturulamadı"})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Token oluşturulamadı"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, LoginResponse{Token: token})
 }
