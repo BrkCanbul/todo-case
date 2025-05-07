@@ -132,25 +132,68 @@ paths:
       summary: Yeni görev listesi oluştur
       tags:
       - todos
-  /todos/{id}:
-    delete:
+  /todos/elems:
+    get:
       consumes:
       - application/json
-      description: Bu method henüz implemente edilmemiştir.
+      description: Verilen liste kimliğine (id) göre görevleri döndürür
+      parameters:
+      - description: Liste Kimliği
+        in: query
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
-      responses: {}
-      summary: Listeyi sil
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ToDo'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Belirli bir listeye ait görevleri getir
       tags:
       - todos
-    put:
+    post:
       consumes:
       - application/json
-      description: Bu method henüz implemente edilmemiştir.
+      description: Listeye Yeni bir görev  ekler
+      parameters:
+      - description: Yeni görev
+        in: body
+        name: todoList
+        required: true
+        schema:
+          $ref: '#/definitions/models.ToDo'
       produces:
       - application/json
-      responses: {}
-      summary: Listeyi düzenle
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ToDo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Yeni görev oleuştur
       tags:
       - todos
 securityDefinitions:

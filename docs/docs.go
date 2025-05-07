@@ -144,9 +144,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/todos/{id}": {
-            "put": {
-                "description": "Bu method henüz implemente edilmemiştir.",
+        "/todos/elems": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Verilen liste kimliğine (id) göre görevleri döndürür",
                 "consumes": [
                     "application/json"
                 ],
@@ -156,11 +161,47 @@ const docTemplate = `{
                 "tags": [
                     "todos"
                 ],
-                "summary": "Listeyi düzenle",
-                "responses": {}
+                "summary": "Belirli bir listeye ait görevleri getir",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Liste Kimliği",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ToDo"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
             },
-            "delete": {
-                "description": "Bu method henüz implemente edilmemiştir.",
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Listeye Yeni bir görev  ekler",
                 "consumes": [
                     "application/json"
                 ],
@@ -170,8 +211,38 @@ const docTemplate = `{
                 "tags": [
                     "todos"
                 ],
-                "summary": "Listeyi sil",
-                "responses": {}
+                "summary": "Yeni görev oleuştur",
+                "parameters": [
+                    {
+                        "description": "Yeni görev",
+                        "name": "todoList",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ToDo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ToDo"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
             }
         }
     },
