@@ -30,9 +30,19 @@ func NewTodoController(service services.TodoService) *TodoController {
 // @Router       /todos [get]
 func (ctl *TodoController) GetLists(c *gin.Context) {
 	todos, err := ctl.srv.GetAll()
-	fmt.Print(c.GetString("user_type"))
+	userType := (c.GetString("user_type"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if userType == "user" {
+		result := make([]models.ToDoList, 0)
+		for _, todo := range *todos {
+			if todo.UserId == int32(c.GetUint("user_id")) {
+				result = append(result, todo)
+			}
+		}
+		c.JSON(http.StatusOK, result)
 		return
 	}
 	c.JSON(http.StatusOK, todos)
@@ -53,13 +63,16 @@ func (ctl *TodoController) GetLists(c *gin.Context) {
 func (ctl *TodoController) AddToDoList(c *gin.Context) {
 	var todolist models.ToDoList
 
-	fmt.Printf("AddToDoList %v",c.GetString("user_type"))
+	fmt.Printf("AddToDoList %v", c.GetString("user_type"))
 	fmt.Print(c.GetString("user_type"))
+	userid := c.GetUint("user_id")
+
 	if err := c.ShouldBindJSON(&todolist); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error: err.Error()})
 		return
 	}
+	todolist.UserId = int32(userid)
 
 	created, err := ctl.srv.Create(&todolist)
 	if err != nil {
@@ -83,16 +96,16 @@ func (ctl *TodoController) AddToDoList(c *gin.Context) {
 // @Router       /todos/elems [post]
 func (ctl *TodoController) AddToDoElement(c *gin.Context) {
 	var todoElement models.ToDo
-	fmt.Printf("AddToDoElement %v",c.GetString("user_type"))
+	userid := int32(c.GetUint("user_id"))
+	usertype := c.GetString("user_type")
 
-	fmt.Print(c.GetString("user_type"))
 	if err := c.ShouldBindJSON(&todoElement); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error: err.Error()})
 		return
 	}
 
-	created, err := ctl.srv.CreateElement(&todoElement)
+	created, err := ctl.srv.CreateElement(&todoElement, userid, usertype)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
@@ -112,11 +125,9 @@ func (ctl *TodoController) AddToDoElement(c *gin.Context) {
 // @Failure      500  {object}  models.ErrorResponse
 // @Router       /todos/elems [get]
 func (ctl *TodoController) GetToDoElements(c *gin.Context) {
-	todoElements, err := ctl.srv.GetAllElements()
-
-	fmt.Printf("GetToDoElements %v",c.GetString("user_type"))
-
-	fmt.Print(c.GetString("user_type"))
+	usertype := c.GetString("user_type")
+	userid := int32(c.GetUint("user_id"))
+	todoElements, err := ctl.srv.GetAllElements(usertype, userid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
@@ -138,16 +149,17 @@ func (ctl *TodoController) GetToDoElements(c *gin.Context) {
 // @Router       /todos/elems [get]
 func (ctl *TodoController) GetElementsByListId(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
+	fmt.Printf("GetElementsByListId %v", c.GetString("user_type"))
 
-	fmt.Printf("GetElementsByListId %v",c.GetString("user_type"))
+	userid := int32(c.GetUint("user_id"))
+	usertype := c.GetString("user_type")
 
-	fmt.Print(c.GetString("user_type"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
 		return
 	}
 
-	todoElements, err := ctl.srv.GetElementsByListId(uint(id))
+	todoElements, err := ctl.srv.GetElementsByListId(uint(id), userid, usertype)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return

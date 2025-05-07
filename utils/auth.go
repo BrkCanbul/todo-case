@@ -61,7 +61,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims.UserId)
+		c.Set("user_id", claims.UserId)
 		fmt.Printf("User ID: %d\n", claims.UserId)
 		fmt.Printf("User Type: %s\n", claims.UserType)
 		c.Set("user_type", claims.UserType)
