@@ -23,7 +23,6 @@ type TodoService interface {
 	UpdateTodo(updatedTodo *models.ToDo, userId int32, userType string) (*models.ToDo, error)
 }
 
-
 type MockTodoService struct {
 	todoLists []models.ToDoList
 	todos     []models.ToDo
@@ -46,12 +45,15 @@ func (s *MockTodoService) GetAll() (*[]models.ToDoList, error) {
 	result := make([]models.ToDoList, len(s.todoLists))
 	s.mu.Unlock()
 	for i := range s.todoLists {
-		print(s.todoLists[i].ListId)
+		if s.todoLists[i].RemoveDate.Before(time.Now()) {
+			continue // silinmiş
+		}
 		result[i] = models.ToDoList{
 			ListId:         s.todoLists[i].ListId,
 			ListName:       s.todoLists[i].ListName,
 			CreateDate:     s.todoLists[i].CreateDate,
 			RemoveDate:     s.todoLists[i].RemoveDate,
+			UpdateDate:     s.todoLists[i].UpdateDate,
 			CompleteStatus: s.todoLists[i].CompleteStatus,
 			UserId:         s.todoLists[i].UserId,
 		}
@@ -77,11 +79,12 @@ func (s *MockTodoService) GetElementsByListId(id uint, userid int32, usertype st
 	if usertype == "user" {
 		for _, elem := range usertodoids {
 			for _, todo := range s.todos {
-				if todo.TodolistId == uint(elem) && todo.TodolistId == id {
+				if todo.TodolistId == uint(elem) && todo.TodolistId == id && todo.RemoveDate.After(time.Now()) {
 					result = append(result, models.ToDo{
 						TodoId:      todo.TodoId,
 						TodolistId:  todo.TodolistId,
 						CreateDate:  todo.CreateDate,
+						UpdateDate:  todo.UpdateDate,
 						RemoveDate:  todo.RemoveDate,
 						Content:     todo.Content,
 						IsCompleted: todo.IsCompleted,
@@ -91,11 +94,12 @@ func (s *MockTodoService) GetElementsByListId(id uint, userid int32, usertype st
 		}
 	} else {
 		for _, todo := range s.todos {
-			if todo.TodolistId == id {
+			if todo.TodolistId == id && todo.RemoveDate.After(time.Now()) {
 				result = append(result, models.ToDo{
 					TodoId:      todo.TodoId,
 					TodolistId:  todo.TodolistId,
 					CreateDate:  todo.CreateDate,
+					UpdateDate:  todo.UpdateDate,
 					RemoveDate:  todo.RemoveDate,
 					Content:     todo.Content,
 					IsCompleted: todo.IsCompleted,
@@ -118,11 +122,12 @@ func (s *MockTodoService) GetAllElements(usertype string, userid int32) (*[]mode
 	if usertype == "user" {
 		for _, elem := range usertodoids {
 			for _, todo := range s.todos {
-				if todo.TodolistId == uint(elem) {
+				if todo.TodolistId == uint(elem) && todo.RemoveDate.After(time.Now()) {
 					result = append(result, models.ToDo{
 						TodoId:      todo.TodoId,
 						TodolistId:  todo.TodolistId,
 						CreateDate:  todo.CreateDate,
+						UpdateDate:  todo.UpdateDate,
 						RemoveDate:  todo.RemoveDate,
 						Content:     todo.Content,
 						IsCompleted: todo.IsCompleted,
@@ -136,6 +141,7 @@ func (s *MockTodoService) GetAllElements(usertype string, userid int32) (*[]mode
 				TodoId:      s.todos[i].TodoId,
 				TodolistId:  s.todos[i].TodolistId,
 				CreateDate:  s.todos[i].CreateDate,
+				UpdateDate:  s.todos[i].UpdateDate,
 				RemoveDate:  s.todos[i].RemoveDate,
 				Content:     s.todos[i].Content,
 				IsCompleted: s.todos[i].IsCompleted,
@@ -167,38 +173,43 @@ func (s *MockTodoService) Create(list *models.ToDoList) (*models.ToDoList, error
 func (s *MockTodoService) CreateElement(todoElement *models.ToDo, userid int32, usertype string) (*models.ToDoList, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var selected *models.ToDoList = nil
+
+	var selected *models.ToDoList
 	userlistids := s.GetUserListIds(userid)
-	for _, elem := range s.todoLists {
-		if elem.ListId == todoElement.TodolistId {
-			selected = &elem
+
+	for i := range s.todoLists {
+		if s.todoLists[i].ListId == todoElement.TodolistId {
+			selected = &s.todoLists[i]
+			break
 		}
 	}
 	if selected == nil {
-		return nil, errors.New(fmt.Sprintf("id with %d couldn't found in list", todoElement.TodolistId))
+		return nil, fmt.Errorf("id with %d couldn't found in list", todoElement.TodolistId)
+	}
+
+	isInList := false
+	for _, elem := range userlistids {
+		if elem == int(selected.ListId) {
+			isInList = true
+			break
+		}
+	}
+	if !isInList && usertype == "user" {
+		return nil, fmt.Errorf("id with %d couldn't found in list", todoElement.TodolistId)
 	}
 
 	todoElement.TodoId = s.todoId
 	s.todoId++
 	todoElement.CreateDate = time.Now()
-	todoElement.RemoveDate = time.Now().Add(time.Hour * 24 * 30 * 12)
+	todoElement.RemoveDate = time.Now().Add(365 * 24 * time.Hour)
 	todoElement.UpdateDate = time.Now()
-
 	todoElement.IsCompleted = false
 	todoElement.TodolistId = selected.ListId
-	todoElement.Content = todoElement.Content
-	isInList := false
-	for _, elem := range userlistids {
-		if elem == int(selected.ListId) {
-			isInList = true
-		}
-	}
-	if !isInList && usertype == "user" {
-		return nil, errors.New(fmt.Sprintf("id with %d couldn't found in list", todoElement.TodolistId))
-	}
+
 	s.todos = append(s.todos, *todoElement)
 	return selected, nil
 }
+
 func (s *MockTodoService) DeleteList(id uint, userId int32, userType string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -206,15 +217,7 @@ func (s *MockTodoService) DeleteList(id uint, userId int32, userType string) err
 	for i, list := range s.todoLists {
 		if list.ListId == id {
 			if userType == "admin" || list.UserId == userId {
-				s.todoLists = append(s.todoLists[:i], s.todoLists[i+1:]...)
-				// O listeye ait görevleri de silelim
-				filtered := make([]models.ToDo, 0)
-				for _, todo := range s.todos {
-					if todo.TodolistId != id {
-						filtered = append(filtered, todo)
-					}
-				}
-				s.todos = filtered
+				s.todoLists[i].RemoveDate = time.Now()
 				return nil
 			}
 			return errors.New("bu listeyi silmeye yetkiniz yok")
@@ -233,7 +236,8 @@ func (s *MockTodoService) UpdateList(updatedList *models.ToDoList, userId int32,
 				updatedList.CreateDate = list.CreateDate
 				updatedList.RemoveDate = list.RemoveDate
 				updatedList.UpdateDate = time.Now()
-				s.todoLists[i] = *updatedList
+				s.todoLists[i].ListName = updatedList.ListName
+				s.todoLists[i].UpdateDate = time.Now()
 				return updatedList, nil
 			}
 			return nil, errors.New("bu listeyi güncellemeye yetkiniz yok")
@@ -250,7 +254,7 @@ func (s *MockTodoService) DeleteTodo(id uint, userId int32, userType string) err
 		if todo.TodoId == id {
 			listOwnerId := s.findListOwner(todo.TodolistId)
 			if userType == "admin" || listOwnerId == userId {
-				s.todos = append(s.todos[:i], s.todos[i+1:]...)
+				s.todos[i].RemoveDate = time.Now()
 				return nil
 			}
 			return errors.New("bu görevi silmeye yetkiniz yok")
@@ -270,7 +274,9 @@ func (s *MockTodoService) UpdateTodo(updatedTodo *models.ToDo, userId int32, use
 				updatedTodo.CreateDate = todo.CreateDate
 				updatedTodo.RemoveDate = todo.RemoveDate
 				updatedTodo.UpdateDate = time.Now()
-				s.todos[i] = *updatedTodo
+				s.todos[i].IsCompleted = updatedTodo.IsCompleted
+				s.todos[i].Content = updatedTodo.Content
+				s.updateListStatus(todo.TodolistId)
 				return updatedTodo, nil
 			}
 			return nil, errors.New("bu görevi güncellemeye yetkiniz yok")
@@ -287,4 +293,32 @@ func (s *MockTodoService) findListOwner(listId uint) int32 {
 		}
 	}
 	return -1
+}
+
+func (s *MockTodoService) updateListStatus(listId uint) {
+	completeCount := 0
+	incompleteCount := 0
+	fmt.Println("listId", listId)
+	for _, todo := range s.todos {
+		if todo.TodolistId == listId {
+			if todo.IsCompleted {
+				completeCount++
+			} else {
+				incompleteCount++
+			}
+		}
+	}
+	// for _, list := range s.todoLists {
+	// 	if list.ListId == listId {
+	// 		fmt.Println("listId", list.ListId)
+	// 		list.CompleteStatus = float32(completeCount) / float32(completeCount+incompleteCount) * 100
+	// 	}
+	// }
+	for i := range s.todoLists {
+		if s.todoLists[i].ListId == listId {
+			fmt.Println("completeCount", float32(completeCount) / float32(completeCount+incompleteCount) * 100)
+			s.todoLists[i].CompleteStatus = float32(completeCount) / float32(completeCount+incompleteCount) * 100
+		}
+	}
+	
 }
