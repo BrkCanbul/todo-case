@@ -10,6 +10,8 @@ import (
 
 type TodoService interface {
 	GetAll() (*[]models.ToDoList, error)
+	GetAllElements() (*[]models.ToDo, error)
+	GetElementsByListId(id uint) (*[]models.ToDo, error)
 	Create(todo *models.ToDoList) (*models.ToDoList, error)
 	CreateElement(todoElement *models.ToDo) (*models.ToDoList, error)
 }
@@ -49,6 +51,50 @@ func (s *MockTodoService) GetAll() (*[]models.ToDoList, error) {
 	return &result, nil
 }
 
+func (s *MockTodoService) GetElementsByListId(id uint) (*[]models.ToDo, error) {
+	s.mu.Lock()
+	result := make([]models.ToDo, 0)
+	s.mu.Unlock()
+	fmt.Println("get by id", id)
+
+	fmt.Println("id", id)
+	for _, elem := range s.todos {
+		if elem.TodolistId == id {
+			result = append(result, models.ToDo{
+				TodoId:      elem.TodoId,
+				TodolistId:  elem.TodolistId,
+				CreateDate:  elem.CreateDate,
+				RemoveDate:  elem.RemoveDate,
+				Content:     elem.Content,
+				IsCompleted: elem.IsCompleted,
+			})
+		}
+	}
+	if len(result) == 0 {
+		return nil, errors.New(fmt.Sprintf("id with %d couldn't found in list", id))
+	}
+	return &result, nil
+}
+
+
+func (s *MockTodoService) GetAllElements() (*[]models.ToDo, error) {
+	s.mu.Lock()
+	result := make([]models.ToDo, len(s.todos))
+	s.mu.Unlock()
+	for i := range s.todos {
+		print(s.todos[i].TodoId)
+		result[i] = models.ToDo{
+			TodoId:      s.todos[i].TodoId,
+			TodolistId:  s.todos[i].TodolistId,
+			CreateDate:  s.todos[i].CreateDate,
+			RemoveDate:  s.todos[i].RemoveDate,
+			Content:     s.todos[i].Content,
+			IsCompleted: s.todos[i].IsCompleted,
+		}
+	}
+	return &result, nil
+}
+
 func (s *MockTodoService) Create(list *models.ToDoList) (*models.ToDoList, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -62,6 +108,7 @@ func (s *MockTodoService) Create(list *models.ToDoList) (*models.ToDoList, error
 		ListName:       list.ListName,
 		CreateDate:     time.Now(),
 		RemoveDate:     time.Now().Add(time.Hour * 24 * 30 * 12),
+		UpdateDate:     time.Now(),
 		CompleteStatus: list.CompleteStatus,
 		UserId:         list.UserId,
 	})
@@ -84,6 +131,13 @@ func (s *MockTodoService) CreateElement(todoElement *models.ToDo) (*models.ToDoL
 
 	todoElement.TodoId = s.todoId
 	s.todoId++
+	todoElement.CreateDate = time.Now()
+	todoElement.RemoveDate = time.Now().Add(time.Hour * 24 * 30 * 12)
+	todoElement.UpdateDate = time.Now()
+
+	todoElement.IsCompleted = false
+	todoElement.TodolistId = selected.ListId
+	todoElement.Content = todoElement.Content
 	s.todos = append(s.todos, *todoElement)
 
 	return selected, nil
