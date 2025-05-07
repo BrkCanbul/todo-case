@@ -62,9 +62,6 @@ func (ctl *TodoController) GetLists(c *gin.Context) {
 // @Router       /todos [post]
 func (ctl *TodoController) AddToDoList(c *gin.Context) {
 	var todolist models.ToDoList
-
-	fmt.Printf("AddToDoList %v", c.GetString("user_type"))
-	fmt.Print(c.GetString("user_type"))
 	userid := c.GetUint("user_id")
 
 	if err := c.ShouldBindJSON(&todolist); err != nil {
@@ -165,4 +162,76 @@ func (ctl *TodoController) GetElementsByListId(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, todoElements)
+}
+
+func (ctl *TodoController) DeleteToDoList(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
+		return
+	}
+
+	err = ctl.srv.DeleteList(uint(id), int32(c.GetUint("user_id")), c.GetString("user_type"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Liste başarıyla silindi"})
+}
+func (ctl *TodoController) DeleteToDoElement(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
+		return
+	}
+
+	err = ctl.srv.DeleteTodo(uint(id), int32(c.GetUint("user_id")), c.GetString("user_type"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Görev başarıyla silindi"})
+}
+func (ctl *TodoController) UpdateToDolist(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
+		return
+	}
+
+	var todolist models.ToDoList
+	if err := c.ShouldBindJSON(&todolist); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	todolist.ListId = uint(id)
+
+	updated, err := ctl.srv.UpdateList(&todolist, int32(c.GetUint("user_id")), c.GetString("user_type"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, updated)
+
+}
+func (ctl *TodoController) UpdateToDoElement(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
+		return
+	}
+
+	var todoElement models.ToDo
+	if err := c.ShouldBindJSON(&todoElement); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	todoElement.TodoId = uint(id)
+
+	updated, err := ctl.srv.UpdateTodo(&todoElement, int32(c.GetUint("user_id")), c.GetString("user_type"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, updated)
 }
