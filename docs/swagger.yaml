@@ -1,0 +1,162 @@
+basePath: /
+definitions:
+  controllers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        example: bir hata oluştu
+        type: string
+    type: object
+  models.ToDo:
+    properties:
+      content:
+        example: todo content
+        type: string
+      is_completed:
+        example: false
+        type: boolean
+      todo_id:
+        example: 1
+        type: integer
+      todolist_id:
+        example: 1
+        type: integer
+    type: object
+  models.ToDoList:
+    properties:
+      complete_status:
+        example: 0.5
+        type: number
+      list_id:
+        example: 1
+        type: integer
+      list_name:
+        example: list name
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Görev yönetimi servisi
+  title: Todo API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Kullanıcı adı ve şifre ile giriş yapar
+      parameters:
+      - description: Yeni görev listesi
+        in: body
+        name: LoginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ToDo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Giriş yap
+      tags:
+      - auth
+  /todos:
+    get:
+      consumes:
+      - application/json
+      description: Kullanıcının tüm görevlerini listeler
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ToDo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Tüm görevleri getir
+      tags:
+      - todos
+    post:
+      consumes:
+      - application/json
+      description: Yeni bir görev listesi ekler
+      parameters:
+      - description: Yeni görev listesi
+        in: body
+        name: todoList
+        required: true
+        schema:
+          $ref: '#/definitions/models.ToDoList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ToDoList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Yeni görev listesi oluştur
+      tags:
+      - todos
+  /todos/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Bu method henüz implemente edilmemiştir.
+      produces:
+      - application/json
+      responses: {}
+      summary: Listeyi sil
+      tags:
+      - todos
+    put:
+      consumes:
+      - application/json
+      description: Bu method henüz implemente edilmemiştir.
+      produces:
+      - application/json
+      responses: {}
+      summary: Listeyi düzenle
+      tags:
+      - todos
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT formatında bearer token giriniz. Örn: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
