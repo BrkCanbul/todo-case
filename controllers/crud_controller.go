@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"todo-case/models"
 	"todo-case/services"
 
@@ -35,28 +37,6 @@ func (ctl *TodoController) GetLists(c *gin.Context) {
 	c.JSON(http.StatusOK, todos)
 }
 
-// AddTodoCase godoc
-// @Summary      Yeni görev ekle
-// @Description  Bu method henüz implemente edilmemiştir.
-// @Tags         todos
-// @Accept       json
-// @Produce      json
-// @Router       /todos [post]
-func AddTodoCase(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, models.ErrorResponse{Error: "this method is not implemented"})
-}
-
-// RemoveTodoCase godoc
-// @Summary      Görev sil
-// @Description  Bu method henüz implemente edilmemiştir.
-// @Tags         todos
-// @Accept       json
-// @Produce      json
-// @Router       /todos/{id} [delete]
-func RemoveTodoCase(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, models.ErrorResponse{Error: "this method is not implemented"})
-}
-
 // AddToDoList godoc
 // @Summary      Yeni görev listesi oluştur
 // @Description  Yeni bir görev listesi ekler
@@ -77,7 +57,6 @@ func (ctl *TodoController) AddToDoList(c *gin.Context) {
 		return
 	}
 
-
 	created, err := ctl.srv.Create(&todolist)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
@@ -86,35 +65,79 @@ func (ctl *TodoController) AddToDoList(c *gin.Context) {
 	c.JSON(http.StatusOK, created)
 }
 
-// RemoveFromList godoc
-// @Summary      Listeyi sil
-// @Description  Bu method henüz implemente edilmemiştir.
+// AddToDoElement godoc
+// @Summary      Yeni görev oleuştur
+// @Description  Listeye Yeni bir görev  ekler
 // @Tags         todos
 // @Accept       json
 // @Produce      json
-// @Router       /todos/{id} [delete]
-func RemoveFromList(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, models.ErrorResponse{Error: "this method is not implemented"})
+// @Security BearerAuth
+// @Param        todoList  body      models.ToDo  true  "Yeni görev"
+// @Success      200  {object}  models.ToDo
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /todos/elems [post]
+func (ctl *TodoController) AddToDoElement(c *gin.Context) {
+	var todoElement models.ToDo
+	if err := c.ShouldBindJSON(&todoElement); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error: err.Error()})
+		return
+	}
+
+	created, err := ctl.srv.CreateElement(&todoElement)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, created)
 }
 
-// EditTodo godoc
-// @Summary      Görev düzenle
-// @Description  Bu method henüz implemente edilmemiştir.
+// GetToDoElements godoc
+// @Summary      görev listesi elemanlarını getir
+// @Description  Listeye Yeni bir görev  ekler
 // @Tags         todos
 // @Accept       json
 // @Produce      json
-// @Router       /todos/{id} [put]
-func EditTodo(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, models.ErrorResponse{Error: "this method is not implemented"})
+// @Security BearerAuth
+// @Success      200  {array}  models.ToDo
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /todos/elems [get]
+func (ctl *TodoController) GetToDoElements(c *gin.Context) {
+	todoElements, err := ctl.srv.GetAllElements()
+	fmt.Println("all todo elements")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, todoElements)
 }
 
-// EditList godoc
-// @Summary      Listeyi düzenle
-// @Description  Bu method henüz implemente edilmemiştir.
+// GetElementsByListId godoc
+// @Summary      Belirli bir listeye ait görevleri getir
+// @Description  Verilen liste kimliğine (id) göre görevleri döndürür
 // @Tags         todos
 // @Accept       json
 // @Produce      json
-// @Router       /todos/{id} [put]
-func EditList(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, models.ErrorResponse{Error: "this method is not implemented"})
+// @Security BearerAuth
+// @Param        id   query     int  true  "Liste Kimliği"
+// @Success      200  {array}   models.ToDo
+// @Failure      400  {object}  models.ErrorResponse
+// @Failure      500  {object}  models.ErrorResponse
+// @Router       /todos/elems [get]
+func (ctl *TodoController) GetElementsByListId(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "id parametresi geçersiz"})
+		return
+	}
+
+	todoElements, err := ctl.srv.GetElementsByListId(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, todoElements)
 }
